@@ -116,7 +116,14 @@ _SOURCE_BASH = """\
 }
 
 %(complete_func)s_setup() {
-    complete -o nosort -F %(complete_func)s %(prog_name)s
+    local COMPLETION_OPTIONS=""
+    local BASH_VERSION_ARR=(${BASH_VERSION//./ })
+    # Only BASH version 4.4 and later have the nosort option.
+    if [ ${BASH_VERSION_ARR[0]} -gt 4 ] || ([ ${BASH_VERSION_ARR[0]} -eq 4 ] \
+&& [ ${BASH_VERSION_ARR[1]} -ge 4 ]); then
+        COMPLETION_OPTIONS="-o nosort"
+    fi
+    complete $COMPLETION_OPTIONS -F %(complete_func)s %(prog_name)s
 }
 
 %(complete_func)s_setup;
@@ -299,31 +306,7 @@ class BashComplete(ShellComplete):
     name = "bash"
     source_template = _SOURCE_BASH
 
-    def _check_version(self) -> None:
-        import subprocess
-
-        output = subprocess.run(
-            ["bash", "-c", "echo ${BASH_VERSION}"], stdout=subprocess.PIPE
-        )
-        match = re.search(r"^(\d+)\.(\d+)\.\d+", output.stdout.decode())
-
-        if match is not None:
-            major, minor = match.groups()
-
-            if major < "4" or major == "4" and minor < "4":
-                raise RuntimeError(
-                    _(
-                        "Shell completion is not supported for Bash"
-                        " versions older than 4.4."
-                    )
-                )
-        else:
-            raise RuntimeError(
-                _("Couldn't detect Bash version, shell completion is not supported.")
-            )
-
     def source(self) -> str:
-        self._check_version()
         return super().source()
 
     def get_completion_args(self) -> t.Tuple[t.List[str], str]:
