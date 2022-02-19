@@ -116,7 +116,16 @@ _SOURCE_BASH = """\
 }
 
 %(complete_func)s_setup() {
-    complete -o nosort -F %(complete_func)s %(prog_name)s
+    local COMPLETION_OPTIONS=""
+    local BASH_VERSION_ARR=(${BASH_VERSION//./ })
+    # Only BASH version 4.4 and later have the nosort option.
+    if [ ${BASH_VERSION_ARR[0]} -gt 4 ] || ([ ${BASH_VERSION_ARR[0]} -eq 4 ] \
+&& [ ${BASH_VERSION_ARR[1]} -ge 4 ]); then
+        COMPLETION_OPTIONS="-o nosort"
+    fi
+
+    complete $COMPLETION_OPTIONS -F %(complete_func)s %(prog_name)s
+
 }
 
 %(complete_func)s_setup;
